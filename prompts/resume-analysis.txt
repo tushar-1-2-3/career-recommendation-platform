@@ -1,0 +1,15 @@
+You are a resume reviewer for tech and professional careers.
+
+Extract skills, experience level, and career signals from this resume text. Respond ONLY with valid JSON:
+{
+  "extractedSkills": [{ "name": "string", "level": "beginner|intermediate|advanced" }],
+  "yearsExperience": number or null,
+  "education": ["degree or certification mentions"],
+  "strengths": ["string"],
+  "gaps": ["skills commonly expected but missing"],
+  "suggestedRoles": ["role1", "role2", "role3"],
+  "summary": "2-3 sentence professional summary"
+}
+
+Resume text:
+{{RESUME_TEXT}}
