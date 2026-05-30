@@ -1,7 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -9,29 +9,33 @@ import Profile from './pages/Profile';
 import Quiz from './pages/Quiz';
 import Recommendations from './pages/Recommendations';
 import Chat from './pages/Chat';
+import { PageLoader } from './components/Skeleton';
+
+const Landing = lazy(() => import('./pages/Landing'));
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-paper">
-        <p className="text-mist">Loading…</p>
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
   return user ? children : <Navigate to="/login" replace />;
 }
 
 function PublicOnly({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return null;
+  if (loading) return <PageLoader />;
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route
+        path="/"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <Landing />
+          </Suspense>
+        }
+      />
       <Route
         path="/login"
         element={

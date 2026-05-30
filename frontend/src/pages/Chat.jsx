@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { aiApi } from '../api/client';
 import { chatStorage } from '../lib/storage';
+import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
+import { Skeleton } from '../components/Skeleton';
 
 const STARTERS = [
   'Which career fits me best?',
@@ -101,6 +103,7 @@ function MarkdownMessage({ content }) {
 }
 
 export default function Chat() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -122,7 +125,7 @@ export default function Chat() {
     chatStorage.add('user', msg);
     setLoading(true);
     try {
-      const { reply } = await aiApi.chat(msg);
+      const { reply } = await aiApi.chat(msg, user);
       setMessages((m) => [...m, { role: 'assistant', content: reply }]);
       chatStorage.add('assistant', reply);
     } catch (err) {
@@ -135,17 +138,17 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-5rem)] max-h-[800px]">
+    <div className="soft-enter flex h-[calc(100vh-8rem)] max-h-[800px] min-h-[520px] flex-col lg:h-[calc(100vh-5rem)]">
       <header className="mb-4">
         <h1 className="font-display text-3xl font-semibold">Mentor chat</h1>
         <p className="text-slate text-sm mt-1">Uses your local profile when calling AI.</p>
       </header>
 
-      <div className="flex-1 overflow-y-auto bg-white border border-cream rounded-lg p-5 mb-4 space-y-4">
+      <div className="surface mb-4 flex-1 space-y-4 overflow-y-auto rounded-lg p-3 sm:p-5">
         {!messages.length && (
           <div className="text-center py-8">
             {STARTERS.map((s) => (
-              <button key={s} onClick={() => send(s)} className="block mx-auto text-sm px-3 py-2 mb-2 bg-cream rounded-md text-slate">
+              <button key={s} onClick={() => send(s)} className="block mx-auto text-sm px-3 py-2 mb-2 bg-cream rounded-md text-slate transition hover:-translate-y-0.5 hover:bg-white hover:shadow-card">
                 {s}
               </button>
             ))}
@@ -153,18 +156,23 @@ export default function Chat() {
         )}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[85%] px-4 py-3 rounded-lg text-sm break-words ${m.role === 'user' ? 'bg-ink text-paper' : 'bg-cream text-ink'}`}>
+            <div className={`max-w-[92%] break-words rounded-lg px-3 py-2.5 text-sm sm:max-w-[85%] sm:px-4 sm:py-3 ${m.role === 'user' ? 'bg-ink text-paper' : 'bg-cream text-ink'}`}>
               {m.role === 'assistant' ? <MarkdownMessage content={m.content} /> : m.content}
             </div>
           </div>
         ))}
-        {loading && <p className="text-sm text-mist animate-pulse">Mentor is typing…</p>}
+        {loading && (
+          <div className="max-w-[86%] rounded-lg bg-cream px-4 py-3">
+            <Skeleton className="mb-2 h-3 w-48 bg-white/70" />
+            <Skeleton className="h-3 w-32 bg-white/70" />
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex gap-2">
+      <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex flex-col gap-2 sm:flex-row">
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask a career question…" className="flex-1 px-4 py-3 bg-white border border-cream rounded-lg outline-none focus:border-slate" />
-        <Button type="submit" variant="primary" disabled={loading}>Send</Button>
+        <Button type="submit" variant="primary" disabled={loading} className="w-full sm:w-auto">Send</Button>
       </form>
     </div>
   );

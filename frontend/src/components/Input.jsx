@@ -1,6 +1,6 @@
 export default function Input({ label, hint, className = '', ...props }) {
   return (
-    <label className="block">
+    <label className="field-focus block">
       {label && (
         <span className="block text-sm font-medium text-slate mb-1.5">{label}</span>
       )}

@@ -18,8 +18,17 @@ export const recommendCareer = async (req, res) => {
   try {
     if (!requireOpenAI(res)) return;
     const { profile, extraNotes } = req.body;
-    if (!profile?.name) {
+    if (!profile || typeof profile !== 'object') {
       return res.status(400).json({ message: 'Send profile in request body' });
+    }
+    if (extraNotes && String(extraNotes).length > 1000) {
+      return res.status(400).json({ message: 'Extra notes must be under 1000 characters' });
+    }
+
+    if (!profile.quizResults?.career?.summaryText) {
+      return res.status(400).json({
+        message: 'Take career quiz before generate recommendation',
+      });
     }
 
     let profileText = buildStudentProfileText(profile, profile.skills || []);
@@ -60,6 +69,9 @@ export const chat = async (req, res) => {
     const { message, profile } = req.body;
     if (!message?.trim()) {
       return res.status(400).json({ message: 'Message required' });
+    }
+    if (message.length > 1200) {
+      return res.status(400).json({ message: 'Message must be under 1200 characters' });
     }
 
     const context = profile

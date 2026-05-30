@@ -26,16 +26,16 @@ export default function Dashboard() {
   ].filter(Boolean).length;
 
   return (
-    <div>
+    <div className="soft-enter">
       <header className="mb-10">
         <p className="text-sm text-mist mb-1">Good to see you</p>
-        <h1 className="font-display text-3xl font-semibold text-ink">
+        <h1 className="font-display text-4xl font-semibold text-ink">
           {user?.name?.split(' ')[0] || 'Student'}
         </h1>
       </header>
 
       <div className="grid md:grid-cols-3 gap-5 mb-10">
-        <div className="bg-white border border-cream rounded-lg p-5 shadow-card">
+        <div className="surface rounded-lg p-5 transition duration-300 hover:shadow-lift">
           <p className="text-xs uppercase tracking-wide text-mist mb-2">Profile</p>
           <p className="text-2xl font-semibold">{profileComplete}/4</p>
           <p className="text-sm text-slate mt-1">sections filled</p>
@@ -43,12 +43,12 @@ export default function Dashboard() {
             Complete profile →
           </Link>
         </div>
-        <div className="bg-white border border-cream rounded-lg p-5 shadow-card">
+        <div className="surface rounded-lg p-5 transition duration-300 hover:shadow-lift">
           <p className="text-xs uppercase tracking-wide text-mist mb-2">Skills</p>
           <p className="text-2xl font-semibold">{skills.length}</p>
           <p className="text-sm text-slate mt-1">saved on this device</p>
         </div>
-        <div className="bg-white border border-cream rounded-lg p-5 shadow-card">
+        <div className="surface rounded-lg p-5 transition duration-300 hover:shadow-lift">
           <p className="text-xs uppercase tracking-wide text-mist mb-2">Top match</p>
           <p className="text-2xl font-semibold">
             {latest?.careers?.[0]?.matchScore != null ? `${latest.careers[0].matchScore}%` : '—'}
@@ -60,7 +60,7 @@ export default function Dashboard() {
       </div>
 
       {latest?.careers ? (
-        <section className="bg-white border border-cream rounded-lg p-6 shadow-card mb-8">
+        <section className="surface rounded-lg p-5 sm:p-6 mb-8">
           <div className="flex justify-between items-start mb-6">
             <h2 className="font-display text-xl font-semibold">Latest career matches</h2>
             <Link to="/recommendations">
@@ -79,7 +79,8 @@ export default function Dashboard() {
           </ul>
         </section>
       ) : (
-        <section className="bg-ink text-paper rounded-lg p-8 mb-8 border-l-4 border-rust">
+        <section className="relative overflow-hidden bg-ink text-paper rounded-lg p-6 sm:p-8 mb-8 border border-white/10 shadow-lift">
+          <div className="absolute right-6 top-6 h-24 w-24 rounded-full border border-rust/30" />
           <h2 className="font-display text-xl font-semibold mb-2">Ready for recommendations?</h2>
           <p className="text-paper/70 text-sm mb-5 max-w-md">
             Fill your profile and skills, then generate AI career paths. Results save in your browser.
@@ -91,11 +92,11 @@ export default function Dashboard() {
       )}
 
       <div className="grid sm:grid-cols-2 gap-4">
-        <Link to="/quiz" className="block p-5 bg-cream/50 border border-cream rounded-lg hover:border-slate/30 transition">
+        <Link to="/quiz" className="surface lift-hover block rounded-lg p-5">
           <h3 className="font-medium mb-1">Career quiz</h3>
           <p className="text-sm text-slate">6 easy questions about your interests</p>
         </Link>
-        <Link to="/chat" className="block p-5 bg-cream/50 border border-cream rounded-lg hover:border-slate/30 transition">
+        <Link to="/chat" className="surface lift-hover block rounded-lg p-5">
           <h3 className="font-medium mb-1">Mentor chat</h3>
           <p className="text-sm text-slate">Ask career questions anytime</p>
         </Link>

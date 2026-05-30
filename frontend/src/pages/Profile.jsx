@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { profileStorage } from '../lib/storage';
 import { aiApi } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import TagInput from '../components/TagInput';
+import { Skeleton } from '../components/Skeleton';
 
 export default function Profile() {
-  const { user, setUser } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const [profile, setProfile] = useState(null);
   const [skills, setSkills] = useState([]);
   const [skillForm, setSkillForm] = useState({ skillName: '', level: 'beginner' });
@@ -16,13 +18,17 @@ export default function Profile() {
 
   const load = () => {
     const data = profileStorage.get();
-    setProfile(data.user);
+    setProfile({
+      name: user?.name || '',
+      email: user?.email || '',
+      ...data.user,
+    });
     setSkills(data.skills);
   };
 
-  useEffect(load, []);
+  useEffect(load, [user]);
 
-  const saveProfile = (e) => {
+  const saveProfile = async (e) => {
     e.preventDefault();
     profileStorage.saveProfile({
       name: profile.name,
@@ -35,8 +41,12 @@ export default function Profile() {
       preferredIndustry: profile.preferredIndustry,
       workStyle: profile.workStyle,
     });
-    setUser({ name: profile.name, email: user.email });
-    setMessage('Profile saved on this device.');
+    try {
+      await updateUserProfile({ name: profile.name, full_name: profile.name });
+      setMessage('Profile saved.');
+    } catch (err) {
+      setMessage(`Profile saved on this device, but Supabase name update failed: ${err.message}`);
+    }
   };
 
   const addSkill = (e) => {
@@ -71,19 +81,31 @@ export default function Profile() {
     }
   };
 
-  if (!profile) return <p className="text-mist">Loading…</p>;
+  if (!profile) {
+    return (
+      <div className="soft-enter space-y-6">
+        <Skeleton className="h-10 w-56" />
+        <div className="surface rounded-lg p-5">
+          <Skeleton className="mb-5 h-6 w-32" />
+          <Skeleton className="mb-4 h-11 w-full" />
+          <Skeleton className="mb-4 h-11 w-full" />
+          <Skeleton className="h-11 w-2/3" />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div className="soft-enter">
       <header className="mb-8">
         <h1 className="font-display text-3xl font-semibold">My profile</h1>
         <p className="text-slate text-sm mt-1">Stored in your browser — sent to AI only when you request it.</p>
       </header>
 
-      {message && <p className="mb-4 text-sm px-3 py-2 rounded bg-sage/10 text-sage">{message}</p>}
+      {message && <p className="mb-4 text-sm px-3 py-2 rounded bg-sage/10 text-sage soft-enter">{message}</p>}
 
       <form onSubmit={saveProfile} className="space-y-8">
-        <section className="bg-white border border-cream rounded-lg p-6 shadow-card space-y-5">
+        <section className="surface rounded-lg p-4 space-y-5 sm:p-6">
           <h2 className="font-display text-lg font-semibold border-b border-cream pb-3">Basics</h2>
           <div className="grid sm:grid-cols-2 gap-5">
             <Input label="Name" value={profile.name || ''} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
@@ -97,7 +119,7 @@ export default function Profile() {
           </div>
         </section>
 
-        <section className="bg-white border border-cream rounded-lg p-6 shadow-card space-y-5">
+        <section className="surface rounded-lg p-4 space-y-5 sm:p-6">
           <h2 className="font-display text-lg font-semibold border-b border-cream pb-3">Interests & traits</h2>
           <TagInput label="Interests" tags={profile.interests || []} onChange={(interests) => setProfile({ ...profile, interests })} />
           <TagInput label="Favorite subjects" tags={profile.favoriteSubjects || []} onChange={(favoriteSubjects) => setProfile({ ...profile, favoriteSubjects })} />
@@ -107,7 +129,7 @@ export default function Profile() {
         <Button type="submit" variant="primary">Save profile</Button>
       </form>
 
-      <section className="mt-10 bg-white border border-cream rounded-lg p-6 shadow-card">
+      <section className="surface mt-10 rounded-lg p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold border-b border-cream pb-3 mb-5">Skills</h2>
         <ul className="flex flex-wrap gap-2 mb-6">
           {skills.map((s) => (
@@ -118,23 +140,32 @@ export default function Profile() {
             </li>
           ))}
         </ul>
-        <form onSubmit={addSkill} className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[180px]">
+        <form onSubmit={addSkill} className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-0 flex-1 sm:min-w-[180px]">
             <Input label="Add skill" value={skillForm.skillName} onChange={(e) => setSkillForm({ ...skillForm, skillName: e.target.value })} />
           </div>
-          <select value={skillForm.level} onChange={(e) => setSkillForm({ ...skillForm, level: e.target.value })} className="px-3 py-2.5 border border-cream rounded-md bg-white text-sm">
+          <select value={skillForm.level} onChange={(e) => setSkillForm({ ...skillForm, level: e.target.value })} className="w-full px-3 py-2.5 border border-cream rounded-md bg-white text-sm sm:w-auto">
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
           </select>
-          <Button type="submit" variant="subtle">Add</Button>
+          <Button type="submit" variant="subtle" className="w-full sm:w-auto">Add</Button>
         </form>
       </section>
 
-      <section className="mt-8 bg-white border border-cream rounded-lg p-6 shadow-card">
+      <section className="surface mt-8 rounded-lg p-4 sm:p-6">
         <h2 className="font-display text-lg font-semibold mb-2">Resume (PDF)</h2>
-        <input type="file" accept="application/pdf" onChange={handleResume} disabled={resumeLoading} className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-ink file:text-paper file:text-sm" />
+        <input type="file" accept="application/pdf" onChange={handleResume} disabled={resumeLoading} className="w-full max-w-full text-sm file:mb-2 file:mr-4 file:rounded file:border-0 file:bg-ink file:px-4 file:py-2 file:text-sm file:text-paper sm:file:mb-0" />
+        {resumeLoading && <Skeleton className="mt-4 h-3 w-full" />}
       </section>
+
+      <div className="mt-8 flex flex-col gap-3 border-t border-cream pt-6 sm:flex-row sm:items-center sm:justify-end">
+        <Link to="/quiz" className="w-full sm:w-auto">
+          <Button variant="accent" className="w-full sm:w-auto">
+            Next: Career quiz
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 }

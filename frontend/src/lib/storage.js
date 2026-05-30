@@ -1,6 +1,4 @@
 const KEYS = {
-  accounts: 'pf_accounts',
-  user: 'pf_user',
   profile: 'pf_profile',
   skills: 'pf_skills',
   quiz: 'pf_quiz',
@@ -8,44 +6,29 @@ const KEYS = {
   chat: 'pf_chat',
 };
 
+let storageOwner = 'guest';
+
+export const setStorageOwner = (ownerId) => {
+  storageOwner = ownerId || 'guest';
+};
+
+const scopedKey = (key) => `${key}:${storageOwner}`;
+
 const read = (key, fallback) => {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = localStorage.getItem(scopedKey(key));
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
   }
 };
 
-const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
-
-export const authStorage = {
-  register({ name, email, password }) {
-    const accounts = read(KEYS.accounts, []);
-    if (accounts.some((a) => a.email === email)) {
-      throw new Error('Email already registered');
-    }
-    accounts.push({ name, email, password });
-    write(KEYS.accounts, accounts);
-    write(KEYS.user, { name, email });
-    return { name, email };
-  },
-  login({ email, password }) {
-    const accounts = read(KEYS.accounts, []);
-    const acc = accounts.find((a) => a.email === email && a.password === password);
-    if (!acc) throw new Error('Invalid email or password');
-    write(KEYS.user, { name: acc.name, email: acc.email });
-    return { name: acc.name, email: acc.email };
-  },
-  getUser: () => read(KEYS.user, null),
-  logout: () => localStorage.removeItem(KEYS.user),
-  isLoggedIn: () => !!read(KEYS.user, null),
-};
+const write = (key, value) => localStorage.setItem(scopedKey(key), JSON.stringify(value));
 
 export const profileStorage = {
   get() {
     return {
-      user: { ...authStorage.getUser(), ...read(KEYS.profile, {}) },
+      user: read(KEYS.profile, {}),
       skills: read(KEYS.skills, []),
       quizResults: read(KEYS.quiz, {}),
     };
@@ -89,12 +72,20 @@ export const quizStorage = {
     const quiz = read(KEYS.quiz, {});
     quiz[type] = result;
     write(KEYS.quiz, quiz);
+    if (type === 'career') {
+      localStorage.removeItem(scopedKey(KEYS.recommendation));
+    }
   },
 };
 
 export const recommendStorage = {
   get: () => read(KEYS.recommendation, null),
-  save: (data) => write(KEYS.recommendation, { ...data, savedAt: new Date().toISOString() }),
+  save: (data, signature = '') =>
+    write(KEYS.recommendation, { ...data, signature, savedAt: new Date().toISOString() }),
+  getForSignature(signature) {
+    const saved = read(KEYS.recommendation, null);
+    return saved?.signature === signature ? saved : null;
+  },
 };
 
 export const chatStorage = {
@@ -108,10 +99,14 @@ export const chatStorage = {
 };
 
 /** Full profile object sent to OpenAI API */
-export const buildApiProfile = () => {
+export const buildApiProfile = (authUser = null) => {
   const { user, skills, quizResults } = profileStorage.get();
+  const name = user?.name || authUser?.name || authUser?.user_metadata?.name || authUser?.email?.split('@')[0];
+  const email = user?.email || authUser?.email;
+
   return {
-    name: user?.name,
+    name,
+    email,
     cgpa: user?.cgpa,
     education: user?.education,
     interests: user?.interests,
@@ -124,4 +119,18 @@ export const buildApiProfile = () => {
     quizResults,
     skills,
   };
+};
+
+export const buildRecommendationSignature = (extraNotes = '', authUser = null) => {
+  const profile = buildApiProfile(authUser);
+  const payload = JSON.stringify({
+    profile,
+    extraNotes: extraNotes.trim(),
+  });
+
+  let hash = 5381;
+  for (let i = 0; i < payload.length; i += 1) {
+    hash = (hash * 33) ^ payload.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
 };

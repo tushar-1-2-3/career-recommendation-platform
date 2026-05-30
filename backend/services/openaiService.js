@@ -4,6 +4,8 @@ import { loadPrompt, fillPrompt } from './promptLoader.js';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1',
+  timeout: Number(process.env.OPENAI_TIMEOUT_MS || 45000),
+  maxRetries: 1,
 });
 
 const model = process.env.OPENAI_MODEL || 'openai/gpt-oss-120b:free';
@@ -39,7 +41,7 @@ export const buildStudentProfileText = (profile, skills = []) => {
     profile.cgpa != null && profile.cgpa !== '' ? `CGPA: ${profile.cgpa}` : null,
     profile.education ? `Education: ${profile.education}` : null,
     skillList.length
-      ? `Skills: ${skillList.map((s) => `${s.skillName} (${s.level})`).join(', ')}`
+      ? `Skills: ${skillList.slice(0, 12).map((s) => `${s.skillName} (${s.level})`).join(', ')}`
       : null,
     profile.interests?.length ? `Interests: ${profile.interests.join(', ')}` : null,
     profile.careerGoals ? `Career Goals: ${profile.careerGoals}` : null,
@@ -61,7 +63,7 @@ export const buildStudentProfileText = (profile, skills = []) => {
   }
 
   if (profile.resumeText) {
-    lines.push(`Resume excerpt: ${profile.resumeText.slice(0, 400)}`);
+    lines.push(`Resume excerpt: ${profile.resumeText.slice(0, 250)}`);
   }
 
   return lines.filter(Boolean).join('\n');
@@ -73,7 +75,7 @@ export const getCareerRecommendations = async (profileText) => {
   return chatCompletion(
     'Career counselor. Quiz answers are the main signal. JSON only, no markdown.',
     prompt,
-    { max_tokens: 2200, temperature: 0.6 }
+    { max_tokens: 1700, temperature: 0.55 }
   );
 };
 

@@ -23,13 +23,13 @@ export default function Quiz() {
 
   if (result) {
     return (
-      <div className="max-w-2xl">
+      <div className="max-w-2xl soft-enter">
         <h1 className="font-display text-3xl font-semibold mb-2">Your career profile</h1>
         <p className="text-slate text-sm mb-6">
           Based on your 6 answers — used for AI recommendations.
         </p>
 
-        <div className="bg-white border border-cream rounded-lg p-6 shadow-card space-y-4 mb-6">
+        <div className="surface rounded-lg p-4 space-y-4 mb-6 sm:p-6">
           {result.answers?.map((item, i) => (
             <div key={i} className="text-sm border-b border-cream pb-3 last:border-0">
               <p className="text-mist mb-1">{item.question}</p>
@@ -38,12 +38,13 @@ export default function Quiz() {
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Link to="/recommendations">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <Link to="/recommendations" className="w-full sm:w-auto">
             <Button variant="accent">Get career recommendations →</Button>
           </Link>
           <Button
             variant="ghost"
+            className="w-full sm:w-auto"
             onClick={() => {
               setResult(null);
               setAnswers({});
@@ -57,7 +58,7 @@ export default function Quiz() {
   }
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl soft-enter">
       <header className="mb-8">
         <h1 className="font-display text-3xl font-semibold">Career quiz</h1>
         <p className="text-slate text-sm mt-1">
@@ -67,7 +68,7 @@ export default function Quiz() {
 
       <ol className="space-y-8">
         {questions.map((q, idx) => (
-          <li key={q.id} className="bg-white border border-cream rounded-lg p-5 shadow-card">
+          <li key={q.id} className="surface rounded-lg p-4 transition duration-300 hover:shadow-lift sm:p-5">
             <p className="text-sm text-mist mb-1">Question {idx + 1} of {questions.length}</p>
             <p className="font-medium mb-4">{q.question}</p>
             <div className="space-y-2">
@@ -76,10 +77,10 @@ export default function Quiz() {
                   key={i}
                   type="button"
                   onClick={() => setAnswers((prev) => ({ ...prev, [q.id]: i }))}
-                  className={`w-full text-left px-4 py-2.5 rounded-md border text-sm transition ${
+                  className={`w-full text-left px-4 py-2.5 rounded-md border text-sm transition duration-200 ${
                     answers[q.id] === i
-                      ? 'border-rust bg-rust/5 text-ink'
-                      : 'border-cream hover:border-slate/30'
+                      ? 'border-rust bg-rust/10 text-ink shadow-sm'
+                      : 'border-cream bg-white/55 hover:border-slate/30 hover:bg-white'
                   }`}
                 >
                   {opt}
@@ -90,7 +91,7 @@ export default function Quiz() {
         ))}
       </ol>
 
-      <Button variant="accent" className="mt-8" disabled={!allAnswered} onClick={submit}>
+      <Button variant="accent" className="mt-8 w-full sm:w-auto" disabled={!allAnswered} onClick={submit}>
         See my career profile
       </Button>
     </div>

@@ -9,11 +9,11 @@ const links = [
   { to: '/chat', label: 'Mentor Chat' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onNavigate }) {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-60 shrink-0 bg-ink text-paper min-h-screen flex flex-col border-r border-slate/30">
+    <aside className="w-64 max-w-[82vw] shrink-0 bg-ink text-paper min-h-full flex flex-col border-r border-white/10 shadow-lift">
       <div className="px-5 pt-7 pb-6 border-b border-white/10">
         <p className="font-display text-xl font-semibold tracking-tight">PathFinder</p>
         <p className="text-xs text-mist mt-1">Career guidance studio</p>
@@ -25,25 +25,26 @@ export default function Sidebar() {
             key={to}
             to={to}
             end={end}
+            onClick={onNavigate}
             className={({ isActive }) =>
-              `block px-3 py-2.5 text-sm rounded-md transition ${
+              `group relative block overflow-hidden rounded-md px-3 py-2.5 text-sm transition duration-300 ${
                 isActive
-                  ? 'bg-rust/90 text-paper font-medium'
-                  : 'text-paper/70 hover:bg-white/5 hover:text-paper'
+                  ? 'bg-white text-ink font-semibold shadow-card'
+                  : 'text-paper/70 hover:bg-white/10 hover:text-paper'
               }`
             }
           >
-            {label}
+            <span className="relative z-10">{label}</span>
           </NavLink>
         ))}
       </nav>
 
       <div className="px-4 py-5 border-t border-white/10">
-        <p className="text-sm font-medium truncate">{user?.name}</p>
+        <p className="text-sm font-medium truncate">{user?.name || 'Student'}</p>
         <p className="text-xs text-mist truncate mb-3">{user?.email}</p>
         <button
           onClick={logout}
-          className="text-xs text-paper/60 hover:text-rustlight transition"
+          className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-paper/70 transition hover:border-rustlight hover:text-rustlight"
         >
           Sign out
         </button>
