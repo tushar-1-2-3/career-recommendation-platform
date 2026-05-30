@@ -5,10 +5,48 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   baseURL: process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1',
   timeout: Number(process.env.OPENAI_TIMEOUT_MS || 45000),
-  maxRetries: 1,
+  maxRetries: 0,
+  defaultHeaders: {
+    'HTTP-Referer': process.env.OPENROUTER_SITE_URL || 'http://localhost:5173',
+    'X-Title': process.env.OPENROUTER_APP_NAME || 'PathFinder Career Recommendation',
+  },
 });
 
 const model = process.env.OPENAI_MODEL || 'openai/gpt-oss-120b:free';
+const aiRetries = Number(process.env.OPENAI_RETRIES || 2);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isRetryableAiError = (err) => {
+  const message = String(err?.message || '').toLowerCase();
+  return (
+    message.includes('econnreset') ||
+    message.includes('socket') ||
+    message.includes('timeout') ||
+    message.includes('network') ||
+    message.includes('fetch failed') ||
+    err?.status === 408 ||
+    err?.status === 409 ||
+    err?.status === 429 ||
+    err?.status >= 500
+  );
+};
+
+const withAiRetry = async (operation) => {
+  let lastError;
+
+  for (let attempt = 0; attempt <= aiRetries; attempt += 1) {
+    try {
+      return await operation();
+    } catch (err) {
+      lastError = err;
+      if (!isRetryableAiError(err) || attempt === aiRetries) break;
+      await sleep(800 * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+};
 
 const parseJsonResponse = (text) => {
   const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
@@ -19,15 +57,17 @@ const parseJsonResponse = (text) => {
 };
 
 const chatCompletion = async (systemPrompt, userPrompt, options = {}) => {
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt },
-    ],
-    temperature: options.temperature ?? 0.6,
-    max_tokens: options.max_tokens ?? 2200,
-  });
+  const response = await withAiRetry(() =>
+    openai.chat.completions.create({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: options.temperature ?? 0.6,
+      max_tokens: options.max_tokens ?? 2200,
+    })
+  );
   const text = response.choices[0]?.message?.content;
   if (!text) throw new Error('Empty response from AI');
   return parseJsonResponse(text);
@@ -89,20 +129,22 @@ export const analyzeResume = async (resumeText) => {
 };
 
 export const careerChat = async (question, studentContext) => {
-  const response = await openai.chat.completions.create({
-    model,
-    messages: [
-      {
-        role: 'system',
-        content: fillPrompt(loadPrompt('career-chat.txt'), {
-          STUDENT_CONTEXT: studentContext || 'No profile data yet.',
-          QUESTION: question,
-        }),
-      },
-      { role: 'user', content: question },
-    ],
-    temperature: 0.75,
-    max_tokens: 1600,
-  });
+  const response = await withAiRetry(() =>
+    openai.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: fillPrompt(loadPrompt('career-chat.txt'), {
+            STUDENT_CONTEXT: studentContext || 'No profile data yet.',
+            QUESTION: question,
+          }),
+        },
+        { role: 'user', content: question },
+      ],
+      temperature: 0.75,
+      max_tokens: 1200,
+    })
+  );
   return response.choices[0]?.message?.content || 'No response from AI.';
 };

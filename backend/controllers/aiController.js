@@ -14,6 +14,19 @@ const requireOpenAI = (res) => {
   return true;
 };
 
+const getAiErrorMessage = (err, fallback) => {
+  const message = String(err?.message || '');
+  if (
+    message.includes('ECONNRESET') ||
+    message.includes('fetch failed') ||
+    message.includes('timeout') ||
+    message.includes('socket')
+  ) {
+    return 'AI provider connection failed. Please try again in a moment.';
+  }
+  return message || fallback;
+};
+
 export const recommendCareer = async (req, res) => {
   try {
     if (!requireOpenAI(res)) return;
@@ -38,7 +51,7 @@ export const recommendCareer = async (req, res) => {
     res.json({ recommendation });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: err.message || 'Recommendation failed' });
+    res.status(502).json({ message: getAiErrorMessage(err, 'Recommendation failed') });
   }
 };
 
@@ -59,7 +72,7 @@ export const uploadResume = async (req, res) => {
     const analysis = await analyzeResume(resumeText);
     res.json({ resumeText: resumeText.slice(0, 500), analysis });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(502).json({ message: getAiErrorMessage(err, 'Resume analysis failed') });
   }
 };
 
@@ -81,6 +94,6 @@ export const chat = async (req, res) => {
     const reply = await careerChat(message.trim(), context);
     res.json({ reply });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(502).json({ message: getAiErrorMessage(err, 'Chat failed') });
   }
 };
