@@ -3,6 +3,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://career-recommendation-platform-51im.onrender.com/api/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
